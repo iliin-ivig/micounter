@@ -25,3 +25,11 @@ npm run build
 ```
 
 Готовый `.rpk` появится в `dist/`.
+
+## Скриншоты
+
+```
+npm run screenshots
+```
+
+Запускает свежую сборку из `dist/` в эмуляторе Vela с экраном Mi Band 10 (212×520), проходит по основным экранам и сохраняет скриншоты в `screenshots/`. При первом запуске скачивает SDK эмулятора, около 830 МБ, в `~/.vela/sdk` (или в `VELA_SDK_HOME`). На Linux нужны библиотеки `libgl1 libx11-6 libxcb1 libxext6 libxfixes3 libxdamage1 libpulse0 libnss3`.
