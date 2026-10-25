@@ -83,7 +83,11 @@
         <div class="g-chip" style="background-color: {{g.sides[0].bg}}; border-color: {{g.sides[0].bg}}; opacity: {{g.sides[0].opacity}};">
           <text class="g-label" style="color: {{g.sides[0].fg}};">{{g.labels[0]}}</text>
         </div>
-        <text class="g-score">{{g.scores[0]}}:{{g.scores[1]}}</text>
+        <!-- Счёт тремя частями: двоеточия в один столбец, оба числа прижаты вправо,
+             чтобы единицы стояли под единицами -->
+        <text class="g-score g-score-left">{{g.scores[0]}}</text>
+        <text class="g-score g-colon">:</text>
+        <text class="g-score g-score-right">{{g.scores[1]}}</text>
         <div class="g-chip" style="background-color: {{g.sides[1].bg}}; border-color: {{g.sides[1].bg}}; opacity: {{g.sides[1].opacity}};">
           <text class="g-label" style="color: {{g.sides[1].fg}};">{{g.labels[1]}}</text>
         </div>
@@ -439,14 +443,14 @@ export default {
 }
 
 .game-row {
-  width: 190px;
+  width: 196px;
   height: 38px;
   flex-direction: row;
   align-items: center;
 }
 
 .g-when {
-  width: 64px;
+  width: 60px;
   font-size: 20px;
   color: #989898;
 }
@@ -466,10 +470,23 @@ export default {
 }
 
 .g-score {
-  width: 66px;
   font-size: 24px;
   color: #fbfbfb;
+}
+
+.g-score-left {
+  width: 32px;
+  text-align: right;
+}
+
+.g-colon {
+  width: 12px;
   text-align: center;
+}
+
+.g-score-right {
+  width: 32px;
+  text-align: right;
 }
 
 .spacer {
