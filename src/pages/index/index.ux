@@ -1,0 +1,506 @@
+<template>
+  <div class="page">
+    <!-- Игровой экран. Долгое нажатие: на букву — выбор буквы, на цифру — цвет цифр, на фон — цвет фона -->
+    <div class="game" if="{{loaded && !finished && !picker}}">
+      <div
+        class="zone"
+        style="background-color: {{settings.bg[0]}};"
+        @touchstart="touchStart"
+        @click="add(0)"
+        @longpress="zonePress(0)"
+      >
+        <text class="label" style="color: {{settings.colors[0]}};" @longpress="labelPress(0)">{{settings.labels[0]}}</text>
+        <text class="score" style="color: {{settings.colors[0]}};" @longpress="scorePress(0)">{{scores[0]}}</text>
+      </div>
+
+      <!-- Иконки картинками: в шрифте браслета нет символов вроде ↶ -->
+      <div class="controls">
+        <div class="btn" @click="undo">
+          <image class="btn-icon" src="/common/undo.png"></image>
+        </div>
+        <div class="btn btn-finish" @click="finish">
+          <image class="btn-icon" src="/common/stop.png"></image>
+        </div>
+      </div>
+
+      <div
+        class="zone"
+        style="background-color: {{settings.bg[1]}};"
+        @touchstart="touchStart"
+        @click="add(1)"
+        @longpress="zonePress(1)"
+      >
+        <text class="score" style="color: {{settings.colors[1]}};" @longpress="scorePress(1)">{{scores[1]}}</text>
+        <text class="label" style="color: {{settings.colors[1]}};" @longpress="labelPress(1)">{{settings.labels[1]}}</text>
+      </div>
+    </div>
+
+    <!-- Выбор буквы или цвета. Встроен в страницу, а не открывается отдельной:
+         переход на новую страницу гасил экран примерно на секунду -->
+    <scroll class="picker" scroll-y="true" if="{{picker}}" @touchstart="pickerTouch">
+      <text class="picker-title">{{picker.title}}</text>
+      <div class="grid-row" for="(r, row) in picker.rows">
+        <div
+          for="(i, cell) in row"
+          class="cell"
+          style="width: {{picker.cellWidth}}px; height: {{picker.cellHeight}}px; border-radius: {{picker.cellRadius}}px; background-color: {{cell.bg}}; border-color: {{cell.selected ? '#FBFBFB' : '#3A3A3A'}};"
+          @click="choose(cell.value)"
+        >
+          <text style="font-size: {{picker.fontSize}}px; color: {{cell.fg}};">{{cell.text}}</text>
+        </div>
+      </div>
+      <div class="spacer"></div>
+    </scroll>
+
+    <!-- Экран результата: счёт с буквами (проигравший серым), время, кнопки и прошлые игры -->
+    <scroll class="result" scroll-y="true" if="{{finished}}">
+      <div class="result-score">
+        <div class="result-side" style="background-color: {{resultSides[0].bg}}; border-color: {{resultSides[0].bg}}; opacity: {{resultSides[0].opacity}};">
+          <text class="result-label" style="color: {{resultSides[0].fg}};">{{settings.labels[0]}}</text>
+          <text class="result-num" style="color: {{resultSides[0].fg}};">{{scores[0]}}</text>
+        </div>
+        <text class="result-colon">:</text>
+        <div class="result-side" style="background-color: {{resultSides[1].bg}}; border-color: {{resultSides[1].bg}}; opacity: {{resultSides[1].opacity}};">
+          <text class="result-label" style="color: {{resultSides[1].fg}};">{{settings.labels[1]}}</text>
+          <text class="result-num" style="color: {{resultSides[1].fg}};">{{scores[1]}}</text>
+        </div>
+      </div>
+      <text class="result-time">{{duration}}</text>
+
+      <div class="result-buttons">
+        <div class="btn-round" @click="resume">
+          <image class="btn-icon" src="/common/play.png"></image>
+        </div>
+        <div class="btn-round btn-new" @click="reset">
+          <image class="btn-icon" src="/common/restart.png"></image>
+        </div>
+      </div>
+
+      <!-- Прошлые игры, без текущей: её счёт уже показан сверху -->
+      <div class="divider" if="{{games.length > 0}}"></div>
+      <div class="game-row" for="(i, g) in games">
+        <text class="g-when">{{g.when}}</text>
+        <div class="g-chip" style="background-color: {{g.sides[0].bg}}; border-color: {{g.sides[0].bg}}; opacity: {{g.sides[0].opacity}};">
+          <text class="g-label" style="color: {{g.sides[0].fg}};">{{g.labels[0]}}</text>
+        </div>
+        <text class="g-score">{{g.scores[0]}}:{{g.scores[1]}}</text>
+        <div class="g-chip" style="background-color: {{g.sides[1].bg}}; border-color: {{g.sides[1].bg}}; opacity: {{g.sides[1].opacity}};">
+          <text class="g-label" style="color: {{g.sides[1].fg}};">{{g.labels[1]}}</text>
+        </div>
+      </div>
+
+      <!-- Очистка по долгому нажатию, чтобы не стереть историю случайным тапом.
+           Видна, даже если в истории только текущая игра, — иначе её не стереть -->
+      <div class="btn-round btn-clear" if="{{storedCount > 0}}" @longpress="clearHistory">
+        <image class="btn-icon" src="/common/trash.png"></image>
+      </div>
+      <div class="spacer"></div>
+    </scroll>
+  </div>
+</template>
+
+<script>
+import vibrator from '@system.vibrator'
+import { load, save, defaults } from '../../common/settings.js'
+import { buildPicker, applyChoice } from '../../common/picker.js'
+import { loadGames, putGame, removeGame, clearGames } from '../../common/games.js'
+
+// Проигравшая сторона на экране итога и в истории приглушается прозрачностью:
+// перекраска в серый не работает, когда цифры сами серые или чёрные на чёрном
+const LOSER_OPACITY = 0.4
+const BLACK = ['#000000', '#000000']
+
+function pad(n) {
+  return (n < 10 ? '0' : '') + n
+}
+
+function formatDuration(ms) {
+  const total = Math.floor(ms / 1000)
+  return `${Math.floor(total / 60)}:${pad(total % 60)}`
+}
+
+// Как показать стороны: цифры на фоне игрока, как в игре. При ничьей обе яркие.
+// В играх из версий до 1.3.5 фон не сохранялся — для них чёрный
+function sides(colors, bg, scores) {
+  const [a, b] = scores
+  const lost = [a < b, b < a]
+  return [0, 1].map(i => ({
+    fg: colors[i],
+    bg: (bg || BLACK)[i],
+    opacity: lost[i] ? LOSER_OPACITY : 1
+  }))
+}
+
+// Сегодняшние игры — временем, более ранние — датой
+function formatWhen(ts) {
+  const d = new Date(ts)
+  const now = new Date()
+  const today = d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear()
+  return today ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`
+}
+
+export default {
+  private: {
+    settings: defaults(),
+    // Настройки читаются из хранилища асинхронно; до этого экран не рисуем,
+    // иначе на долю секунды мелькают цвета по умолчанию
+    loaded: false,
+    scores: [0, 0],
+    // Зоны, получившие очко, по порядку — для отмены
+    history: [],
+    startedAt: 0,
+    finished: false,
+    // Поля экрана результата, заполняются в finish()
+    resultSides: sides(['', ''], BLACK, [0, 0]),
+    duration: '',
+    games: [],
+    // Сколько игр в хранилище вместе с текущей
+    storedCount: 0,
+    // longpress всплывает от буквы и цифры к зоне, а способа остановить всплытие в Vela нет:
+    // зона пропускает своё долгое нажатие, если только что сработало вложенное
+    childPressAt: 0,
+    // После долгого нажатия может прийти и click — его не надо засчитывать как очко
+    suppressClick: false,
+    // Открытый экран выбора (см. buildPicker) или null
+    picker: null,
+    // Выбор открывается, пока палец ещё на экране, и его отпускание не должно выбрать
+    // плитку под ним — плитки срабатывают только после нового касания
+    pickerArmed: false
+  },
+
+  onInit() {
+    this.startedAt = Date.now()
+  },
+
+  onShow() {
+    load(settings => {
+      this.settings = settings
+      this.loaded = true
+    })
+  },
+
+  touchStart() {
+    this.suppressClick = false
+  },
+
+  add(zone) {
+    if (this.suppressClick) {
+      this.suppressClick = false
+      return
+    }
+    const scores = this.scores.slice()
+    scores[zone] += 1
+    this.scores = scores
+    this.history.push(zone)
+    vibrator.vibrate({ mode: 'short' })
+  },
+
+  undo() {
+    if (this.history.length === 0) return
+    const zone = this.history.pop()
+    const scores = this.scores.slice()
+    scores[zone] -= 1
+    this.scores = scores
+    vibrator.vibrate({ mode: 'short' })
+  },
+
+  // Свайп вправо на экране выбора закрывает выбор, а не всё приложение
+  onBackPress() {
+    if (!this.picker) return false
+    this.picker = null
+    return true
+  },
+
+  openPicker(kind, player) {
+    this.suppressClick = true
+    this.pickerArmed = false
+    vibrator.vibrate({ mode: 'short' })
+    this.picker = buildPicker(this.settings, kind, player)
+  },
+
+  pickerTouch() {
+    this.pickerArmed = true
+  },
+
+  choose(value) {
+    if (!this.pickerArmed) return
+    this.settings = applyChoice(this.settings, this.picker, value)
+    save(this.settings)
+    this.picker = null
+  },
+
+  labelPress(player) {
+    this.childPressAt = Date.now()
+    this.openPicker('label', player)
+  },
+
+  scorePress(player) {
+    this.childPressAt = Date.now()
+    this.openPicker('color', player)
+  },
+
+  zonePress(player) {
+    if (Date.now() - this.childPressAt < 500) return
+    this.openPicker('bg', player)
+  },
+
+  finish() {
+    const { colors, labels, bg } = this.settings
+    const [a, b] = this.scores
+    this.resultSides = sides(colors, bg, this.scores)
+    this.duration = formatDuration(Date.now() - this.startedAt)
+    this.finished = true
+    vibrator.vibrate({ mode: 'long' })
+
+    const show = list => {
+      this.storedCount = list.length
+      this.games = list
+        .filter(g => g.id !== this.startedAt)
+        .map(g => Object.assign({}, g, { when: formatWhen(g.at), sides: sides(g.colors, g.bg, g.scores) }))
+    }
+    // Пустую игру не сохраняем; если её уже записали до «Продолжить» и отмен — убираем
+    if (a + b === 0) {
+      removeGame(this.startedAt, show)
+    } else {
+      putGame({
+        id: this.startedAt,
+        at: this.startedAt,
+        labels: labels.slice(),
+        colors: colors.slice(),
+        bg: bg.slice(),
+        scores: [a, b]
+      }, show)
+    }
+  },
+
+  clearHistory() {
+    vibrator.vibrate({ mode: 'short' })
+    // Стирается и текущая игра: если её продолжить и завершить снова, она запишется заново
+    clearGames(() => {
+      this.games = []
+      this.storedCount = 0
+    })
+  },
+
+  resume() {
+    this.finished = false
+  },
+
+  reset() {
+    this.scores = [0, 0]
+    this.history = []
+    this.startedAt = Date.now()
+    this.finished = false
+  }
+}
+</script>
+
+<style>
+.page {
+  width: 212px;
+  height: 520px;
+  background-color: #000000;
+}
+
+.game {
+  width: 212px;
+  height: 520px;
+  flex-direction: column;
+}
+
+.zone {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Отступы увеличивают область долгого нажатия на маленькую букву */
+/* Без прозрачности: на ярком фоне полупрозрачная буква сливалась с ним */
+.label {
+  font-size: 30px;
+  font-weight: bold;
+  padding: 6px 24px;
+}
+
+.score {
+  font-size: 110px;
+  font-weight: bold;
+}
+
+.controls {
+  height: 72px;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  background-color: #000000;
+}
+
+/* border-radius работает только вместе с border-width и border-color */
+.btn {
+  width: 80px;
+  height: 52px;
+  border-width: 2px;
+  border-color: #3a3a3a;
+  border-radius: 26px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-finish {
+  border-color: #fb8247;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.result {
+  width: 212px;
+  height: 520px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.result-score {
+  flex-direction: row;
+  align-items: center;
+  margin-top: 56px;
+}
+
+/* border-radius работает только вместе с border-width и border-color (задаются цветом фона) */
+.result-side {
+  width: 84px;
+  padding: 4px 0;
+  border-width: 2px;
+  border-radius: 16px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.result-label {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.result-num {
+  font-size: 64px;
+  font-weight: bold;
+}
+
+.result-colon {
+  font-size: 48px;
+  color: #5a5a5a;
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+.result-time {
+  font-size: 20px;
+  color: #989898;
+  margin-top: 4px;
+}
+
+.result-buttons {
+  width: 180px;
+  flex-direction: row;
+  justify-content: space-around;
+  margin-top: 28px;
+}
+
+/* border-radius работает только вместе с border-width и border-color */
+.btn-round {
+  width: 64px;
+  height: 64px;
+  border-width: 2px;
+  border-color: #3a3a3a;
+  border-radius: 32px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-new {
+  border-color: #fb8247;
+}
+
+.btn-clear {
+  margin-top: 20px;
+}
+
+.divider {
+  width: 150px;
+  height: 2px;
+  background-color: #3a3a3a;
+  margin-top: 32px;
+  margin-bottom: 12px;
+}
+
+.game-row {
+  width: 190px;
+  height: 38px;
+  flex-direction: row;
+  align-items: center;
+}
+
+.g-when {
+  width: 64px;
+  font-size: 20px;
+  color: #989898;
+}
+
+.g-chip {
+  width: 30px;
+  height: 30px;
+  border-width: 1px;
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.g-label {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.g-score {
+  width: 66px;
+  font-size: 24px;
+  color: #fbfbfb;
+  text-align: center;
+}
+
+.spacer {
+  height: 60px;
+}
+
+.picker {
+  width: 212px;
+  height: 520px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.picker-title {
+  font-size: 24px;
+  color: #989898;
+  margin-top: 40px;
+  margin-bottom: 14px;
+}
+
+.grid-row {
+  flex-direction: row;
+  justify-content: center;
+}
+
+/* border-radius работает только вместе с border-width и border-color */
+.cell {
+  border-width: 2px;
+  border-color: #3a3a3a;
+  margin: 3px;
+  justify-content: center;
+  align-items: center;
+}
+</style>
