@@ -1,0 +1,7 @@
+{
+  "picker": {
+    "label": "Буква {label}",
+    "color": "Цвет цифр {label}",
+    "bg": "Фон {label}"
+  }
+}

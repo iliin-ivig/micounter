@@ -38,7 +38,7 @@
     <!-- Выбор буквы или цвета. Встроен в страницу, а не открывается отдельной:
          переход на новую страницу гасил экран примерно на секунду -->
     <scroll class="picker" scroll-y="true" if="{{picker}}" @touchstart="pickerTouch">
-      <text class="picker-title">{{picker.title}}</text>
+      <text class="picker-title">{{ $t('picker.' + picker.kind, { label: picker.label }) }}</text>
       <div class="grid-row" for="(r, row) in picker.rows">
         <div
           for="(i, cell) in row"

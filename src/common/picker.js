@@ -4,7 +4,6 @@ import { BG_COLORS, DIGIT_COLORS, LABELS } from './settings.js'
 // Размеры подобраны, чтобы сетка занимала всю высоту экрана 520px под заголовком
 const KINDS = {
   label: {
-    title: 'Буква',
     options: LABELS,
     columns: 5,
     cellWidth: 36,
@@ -14,7 +13,6 @@ const KINDS = {
     cell: (s, p, v) => ({ bg: s.bg[p], fg: s.colors[p], text: v })
   },
   color: {
-    title: 'Цвет цифр',
     options: DIGIT_COLORS,
     columns: 3,
     cellWidth: 64,
@@ -24,7 +22,6 @@ const KINDS = {
     cell: (s, p, v) => ({ bg: s.bg[p], fg: v, text: '8' })
   },
   bg: {
-    title: 'Фон',
     options: BG_COLORS,
     columns: 3,
     cellWidth: 64,
@@ -51,7 +48,8 @@ export function buildPicker(settings, kindName, player) {
   return {
     kind: kindName,
     player,
-    title: `${kind.title} ${settings.labels[player]}`,
+    // Заголовок переводится в разметке: picker.<kind> в src/i18n
+    label: settings.labels[player],
     rows,
     cellWidth: kind.cellWidth,
     cellHeight: kind.cellHeight,
