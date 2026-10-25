@@ -22,10 +22,12 @@ const PACKAGE = 'com.micounter.app'
 const ZONE_A = [106, 130]
 const ZONE_B = [106, 390]
 const ZONE_B_BG = [20, 330] // фон зоны B мимо цифры и буквы
+const LABEL_B = [106, 480]
 const FINISH = [159, 260]
 const NEW_GAME = [151, 280]
 const FIRST_CELL = [35, 151] // первая плитка выбора цвета цифр: белый
 const BLUE_BG_CELL = [35, 446] // синий в выборе фона: четвёртый ряд, первый столбец
+const LABEL_B_CELL = [64, 113] // буква B в выборе буквы: первый ряд, второй столбец
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 const log = msg => console.log(`[screenshots] ${msg}`)
@@ -170,10 +172,14 @@ async function main() {
     await hold(ZONE_B_BG)
     await shot('04-picker-bg')
     await tap(BLUE_BG_CELL)
-    await shot('05-game-custom')
+
+    await hold(LABEL_B)
+    await shot('05-picker-label')
+    await tap(LABEL_B_CELL)
+    await shot('06-game-custom')
 
     await tap(FINISH)
-    await shot('06-result')
+    await shot('07-result')
   } finally {
     stopping = true
     await manager.stopVvd(VVD)
