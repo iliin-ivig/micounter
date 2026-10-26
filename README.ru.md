@@ -5,13 +5,15 @@
 Счётчик очков для сквоша, падела и других игр на Xiaomi Smart Band 10.
 
 <p>
-  <img src="screenshots/02-game.png" width="160" alt="Игровой экран">
-  <img src="screenshots/07-result.png" width="160" alt="Итог и история">
+  <img src="screenshots/02-game.png" width="160" alt="Игра">
+  <img src="screenshots/03-result.png" width="160" alt="Итог и история">
+  <img src="screenshots/07-game-custom.png" width="160" alt="Игра с настройками">
+  <img src="screenshots/08-result-custom.png" width="160" alt="Итог и история с настройками">
 </p>
 <p>
-  <img src="screenshots/03-picker-color.png" width="160" alt="Выбор цвета цифр">
-  <img src="screenshots/04-picker-bg.png" width="160" alt="Выбор фона">
-  <img src="screenshots/05-picker-label.png" width="160" alt="Выбор буквы">
+  <img src="screenshots/04-picker-color.png" width="160" alt="Выбор цвета цифр">
+  <img src="screenshots/05-picker-bg.png" width="160" alt="Выбор фона">
+  <img src="screenshots/06-picker-label.png" width="160" alt="Выбор буквы">
 </p>
 
 Экран разделён на две зоны: тап по зоне добавляет игроку очко. Внизу кнопки отмены и завершения игры, после завершения показывается итог и история прошлых игр. Долгое нажатие на цифру, букву или фон игрока меняет их цвет и букву.
@@ -22,7 +24,7 @@
 
 Нужен Android-телефон: установка идёт через приложение Notify for Xiaomi.
 
-1. Скачайте [`release/micounter.rpk`](release/micounter.rpk) (версия 1.4.3) на телефон.
+1. Скачайте [`release/micounter.rpk`](release/micounter.rpk) (версия 1.5.0) на телефон.
 2. Установите [Notify for Xiaomi](https://play.google.com/store/apps/details?id=com.mc.xiaomi1) из Google Play.
 3. Временно отключите Mi Fitness: в настройках телефона заберите у него разрешение «Устройства поблизости» и остановите приложение. Браслет в Mi Fitness не отвязывайте.
 4. Подключите браслет в Notify. Когда мастер попросит Auth Key, нажмите **Get** и войдите в аккаунт Xiaomi.

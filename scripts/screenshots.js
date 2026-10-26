@@ -18,16 +18,26 @@ const IMAGE = VelaImageType.VELA_WATCH_5
 const VVD = 'MiCounter_Band10'
 const PACKAGE = 'com.micounter.app'
 
-// Координаты на экране 212x520, см. разметку src/pages/index/index.ux
+// Координаты на экране 212x520, см. разметку src/pages/index/index.ux и src/common/picker.js
 const ZONE_A = [106, 130]
 const ZONE_B = [106, 390]
-const ZONE_B_BG = [20, 330] // фон зоны B мимо цифры и буквы
+const LABEL_A = [106, 40]
 const LABEL_B = [106, 480]
+// Фон зон мимо цифры и буквы
+const BG_A = [20, 210]
+const BG_B = [20, 330]
 const FINISH = [159, 260]
 const NEW_GAME = [151, 280]
-const FIRST_CELL = [35, 151] // первая плитка выбора цвета цифр: белый
-const BLUE_BG_CELL = [35, 446] // синий в выборе фона: четвёртый ряд, первый столбец
-const LABEL_B_CELL = [64, 113] // буква B в выборе буквы: первый ряд, второй столбец
+
+// Плитки экранов выбора
+const colorCell = (row, col) => [36 + col * 70, 151 + row * 134] // цвет цифр: 3 столбца
+const bgCell = (row, col) => [36 + col * 70, 140 + row * 102] // фон: 3 столбца
+const labelCell = (row, col) => [28 + col * 52, 117 + row * 60] // буква: 4 столбца
+const BLACK_DIGITS = colorCell(2, 2)
+const AMBER_BG = bgCell(1, 1)
+const BLUE_BG = bgCell(3, 0)
+const LETTER_K = labelCell(2, 2)
+const LETTER_M = labelCell(3, 0)
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 const log = msg => console.log(`[screenshots] ${msg}`)
@@ -154,7 +164,7 @@ async function main() {
 
     await shot('01-start')
 
-    // Две сыгранные игры, чтобы на экране итога была история
+    // Сначала всё в цветах по умолчанию. Две сыгранные игры — чтобы на экране итога была история
     await playGame(11, 7)
     await tap(FINISH)
     await tap(NEW_GAME)
@@ -164,22 +174,38 @@ async function main() {
 
     await playGame(7, 5)
     await shot('02-game')
+    await tap(FINISH)
+    await shot('03-result')
+    await tap(NEW_GAME)
 
-    await hold(ZONE_A)
-    await shot('03-picker-color')
-    await tap(FIRST_CELL)
+    // Настройка игроков: B — чёрные цифры на янтарном фоне, A — буква M на синем, B — буква K.
+    // Экраны выбора снимаются по ходу, когда в них уже видны новые цвета
+    await hold(BG_B)
+    await shot('05-picker-bg')
+    await tap(AMBER_BG)
 
-    await hold(ZONE_B_BG)
-    await shot('04-picker-bg')
-    await tap(BLUE_BG_CELL)
+    await hold(ZONE_B)
+    await shot('04-picker-color')
+    await tap(BLACK_DIGITS)
 
     await hold(LABEL_B)
-    await shot('05-picker-label')
-    await tap(LABEL_B_CELL)
-    await shot('06-game-custom')
+    await tap(LETTER_K)
 
+    await hold(BG_A)
+    await tap(BLUE_BG)
+
+    await hold(LABEL_A)
+    await shot('06-picker-label')
+    await tap(LETTER_M)
+
+    // Две игры с настройками, чтобы они попали и в историю
+    await playGame(11, 9)
     await tap(FINISH)
-    await shot('07-result')
+    await tap(NEW_GAME)
+    await playGame(6, 4)
+    await shot('07-game-custom')
+    await tap(FINISH)
+    await shot('08-result-custom')
   } finally {
     stopping = true
     await manager.stopVvd(VVD)
