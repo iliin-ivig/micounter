@@ -22,7 +22,7 @@ The app follows the band's language: Russian on a Russian-language band, English
 
 You need an Android phone: the app is installed with Notify for Xiaomi.
 
-1. Download [`release/micounter.rpk`](release/micounter.rpk) (version 1.4.2) to the phone.
+1. Download [`release/micounter.rpk`](release/micounter.rpk) (version 1.4.3) to the phone.
 2. Install [Notify for Xiaomi](https://play.google.com/store/apps/details?id=com.mc.xiaomi1) from Google Play.
 3. Temporarily disable Mi Fitness: in the phone settings, revoke its "Nearby devices" permission and force-stop it. Don't unpair the band in Mi Fitness.
 4. Pair the band in Notify. When the setup asks for the Auth Key, tap **Get** and sign in with your Xiaomi account.

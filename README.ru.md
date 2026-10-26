@@ -22,7 +22,7 @@
 
 Нужен Android-телефон: установка идёт через приложение Notify for Xiaomi.
 
-1. Скачайте [`release/micounter.rpk`](release/micounter.rpk) (версия 1.4.2) на телефон.
+1. Скачайте [`release/micounter.rpk`](release/micounter.rpk) (версия 1.4.3) на телефон.
 2. Установите [Notify for Xiaomi](https://play.google.com/store/apps/details?id=com.mc.xiaomi1) из Google Play.
 3. Временно отключите Mi Fitness: в настройках телефона заберите у него разрешение «Устройства поблизости» и остановите приложение. Браслет в Mi Fitness не отвязывайте.
 4. Подключите браслет в Notify. Когда мастер попросит Auth Key, нажмите **Get** и войдите в аккаунт Xiaomi.

@@ -443,7 +443,7 @@ export default {
 }
 
 .game-row {
-  width: 196px;
+  width: 190px;
   height: 38px;
   flex-direction: row;
   align-items: center;
@@ -480,12 +480,13 @@ export default {
 }
 
 .g-colon {
-  width: 12px;
+  width: 8px;
   text-align: center;
 }
 
+/* Уже левой: у цифр есть свои поля, и при равной ширине правое число отходило от двоеточия дальше левого */
 .g-score-right {
-  width: 32px;
+  width: 30px;
   text-align: right;
 }
 
