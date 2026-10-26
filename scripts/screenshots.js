@@ -34,7 +34,7 @@ const colorCell = (row, col) => [36 + col * 70, 151 + row * 134] // цвет ц�
 const bgCell = (row, col) => [36 + col * 70, 140 + row * 102] // фон: 3 столбца
 const labelCell = (row, col) => [28 + col * 52, 117 + row * 60] // буква: 4 столбца
 const BLACK_DIGITS = colorCell(2, 2)
-const AMBER_BG = bgCell(1, 1)
+const RED_BG = bgCell(0, 2)
 const BLUE_BG = bgCell(3, 0)
 const LETTER_K = labelCell(2, 2)
 const LETTER_M = labelCell(3, 0)
@@ -178,11 +178,11 @@ async function main() {
     await shot('03-result')
     await tap(NEW_GAME)
 
-    // Настройка игроков: B — чёрные цифры на янтарном фоне, A — буква M на синем, B — буква K.
+    // Настройка игроков: M — белые цифры на синем фоне, K — чёрные на красном.
     // Экраны выбора снимаются по ходу, когда в них уже видны новые цвета
     await hold(BG_B)
     await shot('05-picker-bg')
-    await tap(AMBER_BG)
+    await tap(RED_BG)
 
     await hold(ZONE_B)
     await shot('04-picker-color')
