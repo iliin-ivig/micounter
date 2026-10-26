@@ -18,6 +18,8 @@
         <div class="btn" @click="undo">
           <image class="btn-icon" src="/common/undo.png"></image>
         </div>
+        <!-- Сумма очков обоих игроков: в паделе по ней считают смену подачи и длину игры -->
+        <text class="total">{{scores[0] + scores[1]}}</text>
         <div class="btn btn-finish" @click="finish">
           <image class="btn-icon" src="/common/stop.png"></image>
         </div>
@@ -336,15 +338,24 @@ export default {
 
 .controls {
   height: 72px;
+  padding: 0 10px;
   flex-direction: row;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
   background-color: #000000;
 }
 
+.total {
+  flex: 1;
+  font-size: 26px;
+  color: #989898;
+  text-align: center;
+}
+
 /* border-radius работает только вместе с border-width и border-color */
+/* Между кнопками остаётся ~40px — под двузначную сумму очков */
 .btn {
-  width: 80px;
+  width: 76px;
   height: 52px;
   border-width: 2px;
   border-color: #3a3a3a;

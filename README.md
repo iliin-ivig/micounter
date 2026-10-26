@@ -16,7 +16,7 @@ A score counter for squash, padel and other games on the Xiaomi Smart Band 10.
   <img src="screenshots/06-picker-label.png" width="160" alt="Letter picker">
 </p>
 
-The screen is split into two zones: tap a zone to give that player a point. The buttons in the middle undo the last point and finish the game. When the game is finished you see the result and the history of previous games. Long-press a player's digits, letter or background to change their color or letter.
+The screen is split into two zones: tap a zone to give that player a point. The buttons in the middle undo the last point and finish the game; the number between them is the total of both scores, handy for padel. When the game is finished you see the result and the history of previous games. Long-press a player's digits, letter or background to change their color or letter.
 
 The app follows the band's language: Russian on a Russian-language band, English otherwise.
 
@@ -24,7 +24,7 @@ The app follows the band's language: Russian on a Russian-language band, English
 
 You need an Android phone: the app is installed with Notify for Xiaomi.
 
-1. Download [`release/micounter.rpk`](release/micounter.rpk) (version 1.5.0) to the phone.
+1. Download [`release/micounter.rpk`](release/micounter.rpk) (version 1.6.0) to the phone.
 2. Install [Notify for Xiaomi](https://play.google.com/store/apps/details?id=com.mc.xiaomi1) from Google Play.
 3. Temporarily disable Mi Fitness: in the phone settings, revoke its "Nearby devices" permission and force-stop it. Don't unpair the band in Mi Fitness.
 4. Pair the band in Notify. When the setup asks for the Auth Key, tap **Get** and sign in with your Xiaomi account.
