@@ -5,10 +5,10 @@ import { BG_COLORS, DIGIT_COLORS, LABELS } from './settings.js'
 const KINDS = {
   label: {
     options: LABELS,
-    columns: 5,
-    cellWidth: 36,
-    cellHeight: 46,
-    fontSize: 24,
+    columns: 4,
+    cellWidth: 46,
+    cellHeight: 54,
+    fontSize: 28,
     field: 'labels',
     cell: (s, p, v) => ({ bg: s.bg[p], fg: s.colors[p], text: v })
   },

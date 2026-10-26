@@ -2,12 +2,11 @@ import storage from '@system.storage'
 
 const KEY = 'settings'
 
-// Первые четыре цвета взяты с циферблата: белый, серый и два оттенка оранжевого.
-// Чёрный — для ярких фонов
+// Девять заметно разных цветов. Белый и оранжевый взяты с циферблата, чёрный — для ярких фонов
 export const DIGIT_COLORS = [
-  '#FBFBFB', '#989898', '#FB6225',
-  '#FB8247', '#FFD54A', '#4CD964',
-  '#4AA3FF', '#FF5C8A', '#000000'
+  '#FBFBFB', '#FB6225', '#FFD54A',
+  '#4CD964', '#22D3EE', '#3D6BFF',
+  '#A970FF', '#FF5C8A', '#000000'
 ]
 
 // Насыщенные цвета, на которых читаются белые цифры; тёмные приглушённые выглядели полупрозрачными
@@ -17,7 +16,7 @@ export const BG_COLORS = [
   '#039BE5', '#1E5BD8', '#6A3FD3', '#D81B60'
 ]
 
-export const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')
+export const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
 export function defaults() {
   return {
