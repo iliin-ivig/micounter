@@ -54,21 +54,9 @@
       <div class="spacer"></div>
     </scroll>
 
-    <!-- Экран результата: счёт с буквами (проигравший серым), время, кнопки и прошлые игры -->
+    <!-- Экран результата: кнопки и список игр, текущая — первой строкой, крупнее.
+         Список — ровно то, что лежит в истории, поэтому очистка убирает всё, что видно -->
     <scroll class="result" scroll-y="true" if="{{finished}}">
-      <div class="result-score">
-        <div class="result-side" style="background-color: {{resultSides[0].bg}}; border-color: {{resultSides[0].bg}}; opacity: {{resultSides[0].opacity}};">
-          <text class="result-label" style="color: {{resultSides[0].fg}};">{{settings.labels[0]}}</text>
-          <text class="result-num" style="color: {{resultSides[0].fg}};">{{scores[0]}}</text>
-        </div>
-        <text class="result-colon">:</text>
-        <div class="result-side" style="background-color: {{resultSides[1].bg}}; border-color: {{resultSides[1].bg}}; opacity: {{resultSides[1].opacity}};">
-          <text class="result-label" style="color: {{resultSides[1].fg}};">{{settings.labels[1]}}</text>
-          <text class="result-num" style="color: {{resultSides[1].fg}};">{{scores[1]}}</text>
-        </div>
-      </div>
-      <text class="result-time">{{duration}}</text>
-
       <div class="result-buttons">
         <div class="btn-round" @click="resume">
           <image class="btn-icon" src="/common/play.png"></image>
@@ -78,8 +66,21 @@
         </div>
       </div>
 
-      <!-- Прошлые игры, без текущей: её счёт уже показан сверху -->
-      <div class="divider" if="{{games.length > 0}}"></div>
+      <!-- Текущая игра: такая же строка, как в истории, отделена от прошлых игр полосой -->
+      <div class="game-row" if="{{current}}">
+        <text class="g-when">{{current.when}}</text>
+        <div class="g-chip" style="background-color: {{current.sides[0].bg}}; border-color: {{current.sides[0].bg}}; opacity: {{current.sides[0].opacity}};">
+          <text class="g-label" style="color: {{current.sides[0].fg}};">{{current.labels[0]}}</text>
+        </div>
+        <text class="g-score g-score-left">{{current.scores[0]}}</text>
+        <text class="g-score g-colon">:</text>
+        <text class="g-score g-score-right">{{current.scores[1]}}</text>
+        <div class="g-chip" style="background-color: {{current.sides[1].bg}}; border-color: {{current.sides[1].bg}}; opacity: {{current.sides[1].opacity}};">
+          <text class="g-label" style="color: {{current.sides[1].fg}};">{{current.labels[1]}}</text>
+        </div>
+      </div>
+      <div class="divider" if="{{current && games.length > 0}}"></div>
+
       <div class="game-row" for="(i, g) in games">
         <text class="g-when">{{g.when}}</text>
         <div class="g-chip" style="background-color: {{g.sides[0].bg}}; border-color: {{g.sides[0].bg}}; opacity: {{g.sides[0].opacity}};">
@@ -95,9 +96,8 @@
         </div>
       </div>
 
-      <!-- Очистка по долгому нажатию, чтобы не стереть историю случайным тапом.
-           Видна, даже если в истории только текущая игра, — иначе её не стереть -->
-      <div class="btn-round btn-clear" if="{{storedCount > 0}}" @longpress="clearHistory">
+      <!-- Очистка по долгому нажатию, чтобы не стереть историю случайным тапом -->
+      <div class="btn-round btn-clear" if="{{current || games.length > 0}}" @longpress="clearHistory">
         <image class="btn-icon" src="/common/trash.png"></image>
       </div>
       <div class="spacer"></div>
@@ -118,11 +118,6 @@ const BLACK = ['#000000', '#000000']
 
 function pad(n) {
   return (n < 10 ? '0' : '') + n
-}
-
-function formatDuration(ms) {
-  const total = Math.floor(ms / 1000)
-  return `${Math.floor(total / 60)}:${pad(total % 60)}`
 }
 
 // Как показать стороны: цифры на фоне игрока, как в игре. При ничьей обе яркие.
@@ -159,11 +154,10 @@ export default {
     startedAt: 0,
     finished: false,
     // Поля экрана результата, заполняются в finish()
-    resultSides: sides(['', ''], BLACK, [0, 0]),
-    duration: '',
+    // Текущая игра для первой строки списка или null, если её нет в истории (0:0 или очищена)
+    current: null,
+    // Остальные игры из истории
     games: [],
-    // Сколько игр в хранилище вместе с текущей
-    storedCount: 0,
     // longpress всплывает от буквы и цифры к зоне, а способа остановить всплытие в Vela нет:
     // зона пропускает своё долгое нажатие, если только что сработало вложенное
     childPressAt: 0,
@@ -255,13 +249,14 @@ export default {
   finish() {
     const { colors, labels, bg } = this.settings
     const [a, b] = this.scores
-    this.resultSides = sides(colors, bg, this.scores)
-    this.duration = formatDuration(Date.now() - this.startedAt)
     this.finished = true
     vibrator.vibrate({ mode: 'long' })
 
     const show = list => {
-      this.storedCount = list.length
+      const stored = list.find(g => g.id === this.startedAt)
+      this.current = stored
+        ? Object.assign({}, stored, { when: formatWhen(stored.at), sides: sides(stored.colors, stored.bg, stored.scores) })
+        : null
       this.games = list
         .filter(g => g.id !== this.startedAt)
         .map(g => Object.assign({}, g, { when: formatWhen(g.at), sides: sides(g.colors, g.bg, g.scores) }))
@@ -285,8 +280,8 @@ export default {
     vibrator.vibrate({ mode: 'short' })
     // Стирается и текущая игра: если её продолжить и завершить снова, она запишется заново
     clearGames(() => {
+      this.current = null
       this.games = []
-      this.storedCount = 0
     })
   },
 
@@ -380,50 +375,12 @@ export default {
   align-items: center;
 }
 
-.result-score {
-  flex-direction: row;
-  align-items: center;
-  margin-top: 56px;
-}
-
-/* border-radius работает только вместе с border-width и border-color (задаются цветом фона) */
-.result-side {
-  width: 84px;
-  padding: 4px 0;
-  border-width: 2px;
-  border-radius: 16px;
-  flex-direction: column;
-  align-items: center;
-}
-
-.result-label {
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.result-num {
-  font-size: 64px;
-  font-weight: bold;
-}
-
-.result-colon {
-  font-size: 48px;
-  color: #5a5a5a;
-  margin-left: 4px;
-  margin-right: 4px;
-}
-
-.result-time {
-  font-size: 20px;
-  color: #989898;
-  margin-top: 4px;
-}
-
 .result-buttons {
   width: 180px;
   flex-direction: row;
   justify-content: space-around;
-  margin-top: 28px;
+  margin-top: 56px;
+  margin-bottom: 24px;
 }
 
 /* border-radius работает только вместе с border-width и border-color */
@@ -446,11 +403,11 @@ export default {
 }
 
 .divider {
-  width: 150px;
+  width: 190px;
   height: 2px;
   background-color: #3a3a3a;
-  margin-top: 32px;
-  margin-bottom: 12px;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
 .game-row {
