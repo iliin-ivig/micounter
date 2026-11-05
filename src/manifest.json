@@ -1,8 +1,8 @@
 {
   "package": "com.micounter.app",
   "name": "MiCounter",
-  "versionName": "1.7.0",
-  "versionCode": 22,
+  "versionName": "1.9.0",
+  "versionCode": 24,
   "minPlatformVersion": 1000,
   "icon": "/common/logo.png",
   "deviceTypeList": [

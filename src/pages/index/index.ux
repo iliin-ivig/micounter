@@ -56,7 +56,7 @@
 
     <!-- Экран результата: кнопки и список игр, текущая — первой строкой, крупнее.
          Список — ровно то, что лежит в истории, поэтому очистка убирает всё, что видно -->
-    <scroll class="result" scroll-y="true" if="{{finished}}">
+    <scroll class="result" scroll-y="true" if="{{finished && !detail}}">
       <div class="result-buttons">
         <div class="btn-round" @click="resume">
           <image class="btn-icon" src="/common/play.png"></image>
@@ -66,31 +66,28 @@
         </div>
       </div>
 
-      <!-- Текущая игра: такая же строка, как в истории, отделена от прошлых игр полосой -->
-      <div class="game-row" if="{{current}}">
-        <text class="g-when">{{current.when}}</text>
+      <!-- Строки — столбцы «A счёт : счёт B», симметричные относительно двоеточия.
+           Текущая игра первой, отделена от прошлых полосой -->
+      <div class="game-row" if="{{current}}" @click="openGame(current.id)">
         <div class="g-chip" style="background-color: {{current.sides[0].bg}}; border-color: {{current.sides[0].bg}}; opacity: {{current.sides[0].opacity}};">
           <text class="g-label" style="color: {{current.sides[0].fg}};">{{current.labels[0]}}</text>
         </div>
-        <text class="g-score g-score-left">{{current.scores[0]}}</text>
-        <text class="g-score g-colon">:</text>
-        <text class="g-score g-score-right">{{current.scores[1]}}</text>
+        <text class="g-score">{{current.scores[0]}}</text>
+        <text class="g-colon">:</text>
+        <text class="g-score">{{current.scores[1]}}</text>
         <div class="g-chip" style="background-color: {{current.sides[1].bg}}; border-color: {{current.sides[1].bg}}; opacity: {{current.sides[1].opacity}};">
           <text class="g-label" style="color: {{current.sides[1].fg}};">{{current.labels[1]}}</text>
         </div>
       </div>
       <div class="divider" if="{{current && games.length > 0}}"></div>
 
-      <div class="game-row" for="(i, g) in games">
-        <text class="g-when">{{g.when}}</text>
+      <div class="game-row" for="(i, g) in games" @click="openGame(g.id)">
         <div class="g-chip" style="background-color: {{g.sides[0].bg}}; border-color: {{g.sides[0].bg}}; opacity: {{g.sides[0].opacity}};">
           <text class="g-label" style="color: {{g.sides[0].fg}};">{{g.labels[0]}}</text>
         </div>
-        <!-- Счёт тремя частями: двоеточия в один столбец, оба числа прижаты вправо,
-             чтобы единицы стояли под единицами -->
-        <text class="g-score g-score-left">{{g.scores[0]}}</text>
-        <text class="g-score g-colon">:</text>
-        <text class="g-score g-score-right">{{g.scores[1]}}</text>
+        <text class="g-score">{{g.scores[0]}}</text>
+        <text class="g-colon">:</text>
+        <text class="g-score">{{g.scores[1]}}</text>
         <div class="g-chip" style="background-color: {{g.sides[1].bg}}; border-color: {{g.sides[1].bg}}; opacity: {{g.sides[1].opacity}};">
           <text class="g-label" style="color: {{g.sides[1].fg}};">{{g.labels[1]}}</text>
         </div>
@@ -102,6 +99,36 @@
       </div>
       <div class="spacer"></div>
     </scroll>
+
+    <!-- Окно игры из истории: плашки игроков, длительность и разбивка по очкам.
+         Закрывается свайпом вправо (onBackPress) -->
+    <scroll class="detail" scroll-y="true" if="{{detail}}">
+      <div class="detail-head">
+        <div class="detail-side" style="background-color: {{detail.sides[0].bg}}; border-color: {{detail.sides[0].bg}}; opacity: {{detail.sides[0].opacity}};">
+          <text class="detail-label" style="color: {{detail.sides[0].fg}};">{{detail.labels[0]}}</text>
+          <text class="detail-num" style="color: {{detail.sides[0].fg}};">{{detail.scores[0]}}</text>
+        </div>
+        <div class="detail-side" style="background-color: {{detail.sides[1].bg}}; border-color: {{detail.sides[1].bg}}; opacity: {{detail.sides[1].opacity}};">
+          <text class="detail-label" style="color: {{detail.sides[1].fg}};">{{detail.labels[1]}}</text>
+          <text class="detail-num" style="color: {{detail.sides[1].fg}};">{{detail.scores[1]}}</text>
+        </div>
+      </div>
+      <text class="detail-interval">{{detail.interval}}</text>
+
+      <!-- Счёт после каждого очка, последние сверху; число игрока, взявшего очко, — белое -->
+      <div class="pt-row" for="(i, r) in detail.rows">
+        <text class="pt-time">{{r.time}}</text>
+        <text class="pt-score" style="color: {{r.hot === 0 ? '#FBFBFB' : '#5A5A5A'}};">{{r.a}}</text>
+        <text class="pt-colon">:</text>
+        <text class="pt-score" style="color: {{r.hot === 1 ? '#FBFBFB' : '#5A5A5A'}};">{{r.b}}</text>
+      </div>
+
+      <!-- Удаление игры по долгому нажатию, чтобы не стереть её случайным тапом -->
+      <div class="btn-round btn-clear" @longpress="deleteGame(detail.id)">
+        <image class="btn-icon" src="/common/trash.png"></image>
+      </div>
+      <div class="spacer"></div>
+    </scroll>
   </div>
 </template>
 
@@ -109,7 +136,7 @@
 import vibrator from '@system.vibrator'
 import { load, save, defaults } from '../../common/settings.js'
 import { buildPicker, applyChoice } from '../../common/picker.js'
-import { loadGames, putGame, removeGame, clearGames } from '../../common/games.js'
+import { loadGames, withGame, saveGames, clearGames } from '../../common/games.js'
 
 // Проигравшая сторона на экране итога и в истории приглушается прозрачностью:
 // перекраска в серый не работает, когда цифры сами серые или чёрные на чёрном
@@ -118,6 +145,37 @@ const BLACK = ['#000000', '#000000']
 
 function pad(n) {
   return (n < 10 ? '0' : '') + n
+}
+
+// Секунды как m:ss, от часа — h:mm:ss
+function formatClock(sec) {
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor(sec / 60) % 60
+  const ss = pad(sec % 60)
+  return h > 0 ? `${h}:${pad(m)}:${ss}` : `${m}:${ss}`
+}
+
+// Время суток как на часах: 18:53
+function formatTimeOfDay(ts) {
+  const d = new Date(ts)
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// Данные окна игры: интервал «старт - финиш» по часам и время каждого очка от начала игры.
+// В играх из версий до 1.9.0 разбивки и времени финиша нет — только плашки и время старта
+function buildDetail(game) {
+  const running = [0, 0]
+  const rows = (game.points || []).map(([zone, t]) => {
+    running[zone] += 1
+    return { time: formatClock(t), a: running[0], b: running[1], hot: zone }
+  }).reverse() // последние очки сверху
+  return Object.assign({}, game, {
+    sides: sides(game.colors, game.bg, game.scores),
+    interval: game.duration === undefined
+      ? formatTimeOfDay(game.at)
+      : `${formatTimeOfDay(game.at)} - ${formatTimeOfDay(game.at + game.duration * 1000)}`,
+    rows
+  })
 }
 
 // Как показать стороны: цифры на фоне игрока, как в игре. При ничьей обе яркие.
@@ -132,16 +190,6 @@ function sides(colors, bg, scores) {
   }))
 }
 
-// Сегодняшние игры — временем, более ранние — датой
-function formatWhen(ts) {
-  const d = new Date(ts)
-  const now = new Date()
-  const today = d.getDate() === now.getDate() &&
-    d.getMonth() === now.getMonth() &&
-    d.getFullYear() === now.getFullYear()
-  return today ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`
-}
-
 export default {
   private: {
     settings: defaults(),
@@ -149,7 +197,7 @@ export default {
     // иначе на долю секунды мелькают цвета по умолчанию
     loaded: false,
     scores: [0, 0],
-    // Зоны, получившие очко, по порядку — для отмены
+    // Очки по порядку: { zone, t }, t — миллисекунды от начала игры. Для отмены и разбивки в истории
     history: [],
     startedAt: 0,
     finished: false,
@@ -158,6 +206,9 @@ export default {
     current: null,
     // Остальные игры из истории
     games: [],
+    // Вся история в памяти: экран итога рисуется из неё сразу, а запись в хранилище идёт в фоне.
+    // Иначе до конца асинхронной записи на экране оставался список от прошлого завершения
+    allGames: [],
     // longpress всплывает от буквы и цифры к зоне, а способа остановить всплытие в Vela нет:
     // зона пропускает своё долгое нажатие, если только что сработало вложенное
     childPressAt: 0,
@@ -165,6 +216,8 @@ export default {
     suppressClick: false,
     // Открытый экран выбора (см. buildPicker) или null
     picker: null,
+    // Открытое окно игры из истории (см. buildDetail) или null
+    detail: null,
     // Выбор открывается, пока палец ещё на экране, и его отпускание не должно выбрать
     // плитку под ним — плитки срабатывают только после нового касания
     pickerArmed: false
@@ -172,6 +225,9 @@ export default {
 
   onInit() {
     this.startedAt = Date.now()
+    loadGames(list => {
+      this.allGames = list
+    })
   },
 
   onShow() {
@@ -193,24 +249,30 @@ export default {
     const scores = this.scores.slice()
     scores[zone] += 1
     this.scores = scores
-    this.history.push(zone)
+    this.history.push({ zone, t: Date.now() - this.startedAt })
     vibrator.vibrate({ mode: 'short' })
   },
 
   undo() {
     if (this.history.length === 0) return
-    const zone = this.history.pop()
+    const { zone } = this.history.pop()
     const scores = this.scores.slice()
     scores[zone] -= 1
     this.scores = scores
     vibrator.vibrate({ mode: 'short' })
   },
 
-  // Свайп вправо на экране выбора закрывает выбор, а не всё приложение
+  // Свайп вправо на экране выбора или в окне игры закрывает их, а не всё приложение
   onBackPress() {
-    if (!this.picker) return false
-    this.picker = null
-    return true
+    if (this.picker) {
+      this.picker = null
+      return true
+    }
+    if (this.detail) {
+      this.detail = null
+      return true
+    }
+    return false
   },
 
   openPicker(kind, player) {
@@ -252,37 +314,49 @@ export default {
     this.finished = true
     vibrator.vibrate({ mode: 'long' })
 
-    const show = list => {
-      const stored = list.find(g => g.id === this.startedAt)
-      this.current = stored
-        ? Object.assign({}, stored, { when: formatWhen(stored.at), sides: sides(stored.colors, stored.bg, stored.scores) })
-        : null
-      this.games = list
-        .filter(g => g.id !== this.startedAt)
-        .map(g => Object.assign({}, g, { when: formatWhen(g.at), sides: sides(g.colors, g.bg, g.scores) }))
-    }
-    // Пустую игру не сохраняем; если её уже записали до «Продолжить» и отмен — убираем
-    if (a + b === 0) {
-      removeGame(this.startedAt, show)
-    } else {
-      putGame({
-        id: this.startedAt,
-        at: this.startedAt,
-        labels: labels.slice(),
-        colors: colors.slice(),
-        bg: bg.slice(),
-        scores: [a, b]
-      }, show)
-    }
+    const list = withGame(this.allGames, {
+      id: this.startedAt,
+      at: this.startedAt,
+      labels: labels.slice(),
+      colors: colors.slice(),
+      bg: bg.slice(),
+      scores: [a, b],
+      // Компактно для хранилища: [зона, секунды от начала]
+      points: this.history.map(p => [p.zone, Math.round(p.t / 1000)]),
+      duration: Math.round((Date.now() - this.startedAt) / 1000)
+    })
+    this.showGames(list)
+  },
+
+  // Запоминает историю, сохраняет её в фоне и обновляет список на экране итога
+  showGames(list) {
+    this.allGames = list
+    saveGames(list)
+    const stored = list.find(g => g.id === this.startedAt)
+    this.current = stored ? Object.assign({}, stored, { sides: sides(stored.colors, stored.bg, stored.scores) }) : null
+    this.games = list
+      .filter(g => g.id !== this.startedAt)
+      .map(g => Object.assign({}, g, { sides: sides(g.colors, g.bg, g.scores) }))
+  },
+
+  openGame(id) {
+    const game = this.allGames.find(g => g.id === id)
+    if (game) this.detail = buildDetail(game)
+  },
+
+  deleteGame(id) {
+    vibrator.vibrate({ mode: 'short' })
+    this.detail = null
+    this.showGames(this.allGames.filter(g => g.id !== id))
   },
 
   clearHistory() {
     vibrator.vibrate({ mode: 'short' })
     // Стирается и текущая игра: если её продолжить и завершить снова, она запишется заново
-    clearGames(() => {
-      this.current = null
-      this.games = []
-    })
+    this.allGames = []
+    this.current = null
+    this.games = []
+    clearGames()
   },
 
   resume() {
@@ -403,7 +477,7 @@ export default {
 }
 
 .divider {
-  width: 190px;
+  width: 180px;
   height: 2px;
   background-color: #3a3a3a;
   margin-top: 4px;
@@ -411,55 +485,111 @@ export default {
 }
 
 .game-row {
-  width: 190px;
-  height: 38px;
+  width: 180px;
+  height: 46px;
   flex-direction: row;
   align-items: center;
 }
 
-.g-when {
-  width: 60px;
-  font-size: 20px;
-  color: #989898;
+.g-colon {
+  width: 12px;
+  font-size: 30px;
+  color: #fbfbfb;
+  text-align: center;
 }
 
 .g-chip {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-width: 1px;
-  border-radius: 8px;
+  border-radius: 10px;
   justify-content: center;
   align-items: center;
 }
 
 .g-label {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: bold;
 }
 
+/* Числа по центру одинаковых колонок: строки выглядят как столбцы, и плашки не прижимаются к цифрам */
 .g-score {
-  font-size: 24px;
+  width: 48px;
+  font-size: 30px;
   color: #fbfbfb;
-}
-
-.g-score-left {
-  width: 32px;
-  text-align: right;
-}
-
-.g-colon {
-  width: 8px;
   text-align: center;
-}
-
-/* Уже левой: у цифр есть свои поля, и при равной ширине правое число отходило от двоеточия дальше левого */
-.g-score-right {
-  width: 30px;
-  text-align: right;
 }
 
 .spacer {
   height: 60px;
+}
+
+.detail {
+  width: 212px;
+  height: 520px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.detail-head {
+  width: 180px;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 48px;
+}
+
+/* border-radius работает только вместе с border-width и border-color (задаются цветом фона) */
+.detail-side {
+  width: 84px;
+  padding: 4px 0;
+  border-width: 2px;
+  border-radius: 16px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.detail-label {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.detail-num {
+  font-size: 56px;
+  font-weight: bold;
+}
+
+.detail-interval {
+  font-size: 24px;
+  color: #fbfbfb;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+.pt-row {
+  width: 180px;
+  height: 34px;
+  flex-direction: row;
+  align-items: center;
+}
+
+.pt-time {
+  width: 70px;
+  font-size: 20px;
+  color: #989898;
+}
+
+.pt-colon {
+  width: 10px;
+  font-size: 26px;
+  color: #5a5a5a;
+  text-align: center;
+}
+
+.pt-score {
+  width: 50px;
+  font-size: 26px;
+  font-weight: bold;
+  text-align: center;
 }
 
 .picker {

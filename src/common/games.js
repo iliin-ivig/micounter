@@ -3,7 +3,8 @@ import storage from '@system.storage'
 const KEY = 'games'
 const LIMIT = 30
 
-// Сыгранные игры, новые первыми: { id, at, labels, colors, scores }
+// Сыгранные игры, новые первыми: { id, at, labels, colors, bg, scores, points, duration }.
+// points — [[зона, секунды от начала], ...], duration — секунды; в играх до 1.9.0 их нет
 function read(callback) {
   storage.get({
     key: KEY,
@@ -33,16 +34,16 @@ export function loadGames(callback) {
   read(callback)
 }
 
+// Список после завершения игры: пустая (0:0) убирается, иначе встаёт первой.
 // Игру можно завершить, продолжить и завершить снова — запись с тем же id заменяется
-export function putGame(game, callback) {
-  read(list => {
-    const rest = list.filter(g => g.id !== game.id)
-    write([game].concat(rest).slice(0, LIMIT), callback)
-  })
+export function withGame(list, game) {
+  const rest = list.filter(g => g.id !== game.id)
+  const empty = game.scores[0] + game.scores[1] === 0
+  return empty ? rest : [game].concat(rest).slice(0, LIMIT)
 }
 
-export function removeGame(id, callback) {
-  read(list => write(list.filter(g => g.id !== id), callback))
+export function saveGames(list) {
+  write(list.slice(0, LIMIT))
 }
 
 export function clearGames(callback) {
