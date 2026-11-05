@@ -56,7 +56,7 @@
 
     <!-- Экран результата: кнопки и список игр, текущая — первой строкой, крупнее.
          Список — ровно то, что лежит в истории, поэтому очистка убирает всё, что видно -->
-    <scroll class="result" scroll-y="true" if="{{finished && !detail}}">
+    <scroll class="result" scroll-y="true" if="{{finished && !detail && !share}}">
       <div class="result-buttons">
         <div class="btn-round" @click="resume">
           <image class="btn-icon" src="/common/play.png"></image>
@@ -93,12 +93,25 @@
         </div>
       </div>
 
-      <!-- Очистка по долгому нажатию, чтобы не стереть историю случайным тапом -->
-      <div class="btn-round btn-clear" if="{{current || games.length > 0}}" @longpress="clearHistory">
-        <image class="btn-icon" src="/common/trash.png"></image>
+      <!-- QR-код с историей и очистка по долгому нажатию, чтобы не стереть историю случайным тапом -->
+      <div class="result-buttons result-tools" if="{{current || games.length > 0}}">
+        <div class="btn-round" @click="openShare">
+          <image class="btn-icon" src="/common/qr.png"></image>
+        </div>
+        <div class="btn-round" @longpress="clearHistory">
+          <image class="btn-icon" src="/common/trash.png"></image>
+        </div>
       </div>
       <div class="spacer"></div>
     </scroll>
+
+    <!-- QR-код со ссылкой на страницу истории (см. src/common/share.js). Закрывается тапом или свайпом вправо -->
+    <div class="share" if="{{share}}" @click="closeShare">
+      <div class="share-box">
+        <qrcode class="share-code" value="{{share.url}}"></qrcode>
+      </div>
+      <text class="share-caption">{{ $t('share.count', { n: share.count, total: share.total }) }}</text>
+    </div>
 
     <!-- Окно игры из истории: плашки игроков, длительность и разбивка по очкам.
          Закрывается свайпом вправо (onBackPress) -->
@@ -137,6 +150,7 @@ import vibrator from '@system.vibrator'
 import { load, save, defaults } from '../../common/settings.js'
 import { buildPicker, applyChoice } from '../../common/picker.js'
 import { loadGames, withGame, saveGames, clearGames } from '../../common/games.js'
+import { shareLink } from '../../common/share.js'
 
 // Проигравшая сторона на экране итога и в истории приглушается прозрачностью:
 // перекраска в серый не работает, когда цифры сами серые или чёрные на чёрном
@@ -218,6 +232,8 @@ export default {
     picker: null,
     // Открытое окно игры из истории (см. buildDetail) или null
     detail: null,
+    // Открытый QR-код с историей: { url, count, total } или null
+    share: null,
     // Выбор открывается, пока палец ещё на экране, и его отпускание не должно выбрать
     // плитку под ним — плитки срабатывают только после нового касания
     pickerArmed: false
@@ -270,6 +286,10 @@ export default {
     }
     if (this.detail) {
       this.detail = null
+      return true
+    }
+    if (this.share) {
+      this.share = null
       return true
     }
     return false
@@ -337,6 +357,15 @@ export default {
     this.games = list
       .filter(g => g.id !== this.startedAt)
       .map(g => Object.assign({}, g, { sides: sides(g.colors, g.bg, g.scores) }))
+  },
+
+  openShare() {
+    const { url, count } = shareLink(this.allGames)
+    if (count > 0) this.share = { url, count, total: this.allGames.length }
+  },
+
+  closeShare() {
+    this.share = null
   },
 
   openGame(id) {
@@ -474,6 +503,42 @@ export default {
 
 .btn-clear {
   margin-top: 20px;
+}
+
+.result-tools {
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+/* Белая рамка вокруг кода: сканерам нужна светлая «тихая зона» по краям */
+.share {
+  width: 212px;
+  height: 520px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.share-box {
+  width: 212px;
+  height: 212px;
+  padding: 8px;
+  background-color: #ffffff;
+  justify-content: center;
+  align-items: center;
+}
+
+.share-code {
+  width: 196px;
+  height: 196px;
+  color: #000000;
+  background-color: #ffffff;
+}
+
+.share-caption {
+  font-size: 22px;
+  color: #989898;
+  margin-top: 16px;
 }
 
 .divider {

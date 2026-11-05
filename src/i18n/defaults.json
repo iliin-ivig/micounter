@@ -3,5 +3,8 @@
     "label": "Letter {label}",
     "color": "Digits {label}",
     "bg": "Background {label}"
+  },
+  "share": {
+    "count": "Games: {n} of {total}"
   }
 }

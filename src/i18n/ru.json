@@ -3,5 +3,8 @@
     "label": "Буква {label}",
     "color": "Цвет цифр {label}",
     "bg": "Фон {label}"
+  },
+  "share": {
+    "count": "Игр: {n} из {total}"
   }
 }
