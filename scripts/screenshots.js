@@ -27,7 +27,7 @@ const LABEL_B = [106, 480]
 const BG_A = [20, 210]
 const BG_B = [20, 330]
 const FINISH = [159, 260]
-const NEW_GAME = [151, 280]
+const NEW_GAME = [151, 88]
 
 // Плитки экранов выбора
 const colorCell = (row, col) => [36 + col * 70, 151 + row * 134] // цвет цифр: 3 столбца
