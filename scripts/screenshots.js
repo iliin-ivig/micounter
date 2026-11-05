@@ -28,6 +28,7 @@ const BG_A = [20, 210]
 const BG_B = [20, 330]
 const FINISH = [159, 260]
 const NEW_GAME = [151, 88]
+const FIRST_ROW = [106, 167] // первая строка списка на экране итога — текущая игра
 
 // Плитки экранов выбора
 const colorCell = (row, col) => [36 + col * 70, 151 + row * 134] // цвет цифр: 3 столбца
@@ -206,6 +207,9 @@ async function main() {
     await shot('07-game-custom')
     await tap(FINISH)
     await shot('08-result-custom')
+
+    await tap(FIRST_ROW)
+    await shot('09-game-details')
   } finally {
     stopping = true
     await manager.stopVvd(VVD)
